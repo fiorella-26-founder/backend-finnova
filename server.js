@@ -34,12 +34,14 @@ app.disable('x-powered-by');
 const allowedOrigins = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://finnova-nine.vercel.app'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Permitir peticiones sin origen (como Postman o cURL), localhost y cualquier subdominio de Vercel
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('vercel.app')) {
             callback(null, true);
         } else {
             callback(new Error('Acceso no permitido por la política de seguridad CORS'));
