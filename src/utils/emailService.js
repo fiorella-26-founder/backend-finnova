@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Configuración de transporte SMTP
+// Configuración de transporte SMTP con timeouts seguros
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.ethereal.email',
     port: parseInt(process.env.SMTP_PORT, 10) || 587,
@@ -8,7 +8,10 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.SMTP_USER || 'finnova.asesoria@gmail.com',
         pass: process.env.SMTP_PASS || 'finnova_pass_2026'
-    }
+    },
+    connectionTimeout: 3000,
+    greetingTimeout: 3000,
+    socketTimeout: 3000
 });
 
 const EmailService = {
