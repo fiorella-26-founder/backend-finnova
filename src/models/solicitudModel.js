@@ -160,7 +160,7 @@ const SolicitudModel = {
             if (estado_pago === 'Pagado') {
                 estado_atencion = id_asesor_asignado ? 'Pendiente' : 'Pendiente de Asignación';
             } else {
-                estado_atencion = 'Pendiente de Validación de Pago';
+                estado_atencion = 'Pendiente de Validación';
             }
         }
 
@@ -254,7 +254,7 @@ const SolicitudModel = {
             `UPDATE solicitudes 
              SET id_asesor_asignado = ?,
                  estado_atencion = CASE 
-                     WHEN estado_atencion IN ('Nueva', 'Pendiente de Asignación', 'Pendiente de Asignacion', 'Pendiente de Validación de Pago', 'Pendiente de Validacion de Pago', 'Pendiente de Cobranza') THEN 'Pendiente' 
+                     WHEN estado_atencion IN ('Nueva', 'Pendiente de Asignación', 'Pendiente de Asignacion', 'Pendiente de Validación', 'Pendiente de Validacion', 'Pendiente de Validación de Pago', 'Pendiente de Validacion de Pago', 'Pendiente de Cobranza') THEN 'Pendiente' 
                      ELSE estado_atencion 
                  END
              WHERE id_solicitud = ?`,

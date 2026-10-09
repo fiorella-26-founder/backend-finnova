@@ -17,6 +17,16 @@ async function testConnection() {
     try {
         const connection = await pool.getConnection();
         console.log('¡Conexión exitosa a la base de datos!');
+
+        // Migración automática no destructiva para asegurar capacidad suficiente en columnas de estados
+        try {
+            await connection.query('ALTER TABLE solicitudes MODIFY COLUMN estado_atencion VARCHAR(60) DEFAULT "Nueva"');
+            await connection.query('ALTER TABLE solicitudes MODIFY COLUMN estado_pago VARCHAR(60) DEFAULT "Pendiente"');
+            await connection.query('ALTER TABLE solicitudes MODIFY COLUMN id_solicitud VARCHAR(50)');
+        } catch (migErr) {
+            console.warn('ℹ️ [DB] Nota sobre migración de columnas:', migErr.message);
+        }
+
         connection.release();
     } catch (error) {
         console.error('Error al conectar a la base de datos:', error.message);
