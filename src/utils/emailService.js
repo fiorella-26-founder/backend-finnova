@@ -4,14 +4,14 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.ethereal.email',
     port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: false,
+    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
     auth: {
         user: process.env.SMTP_USER || 'finnova.asesoria@gmail.com',
         pass: process.env.SMTP_PASS || 'finnova_pass_2026'
     },
-    connectionTimeout: 3000,
-    greetingTimeout: 3000,
-    socketTimeout: 3000
+    connectionTimeout: 4000,
+    greetingTimeout: 4000,
+    socketTimeout: 4000
 });
 
 const EmailService = {
@@ -19,7 +19,7 @@ const EmailService = {
      * Enviar correo con credenciales de acceso para nuevos clientes tras validar su cobranza/pago o registro
      */
     async enviarCredencialesCliente({ nombre, email, password, dni, id_solicitud }) {
-        const loginUrl = process.env.FRONTEND_LOGIN_URL || 'http://localhost:4200/login';
+        const loginUrl = process.env.FRONTEND_LOGIN_URL || 'https://finnova-nine.vercel.app/login';
 
         const subject = '🔐 ¡Bienvenido a Finnova! Acceso para el seguimiento de tu solicitud';
         const html = `
@@ -103,8 +103,9 @@ const EmailService = {
         console.log('------------------------------------------------------------');
 
         try {
+            const senderAddress = process.env.SMTP_FROM || process.env.SMTP_USER || 'notificaciones@finnova.pe';
             const info = await transporter.sendMail({
-                from: '"Finnova Asesoría Financiera" <notificaciones@finnova.pe>',
+                from: `"Finnova Asesoría Financiera" <${senderAddress}>`,
                 to: email,
                 subject,
                 html

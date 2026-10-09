@@ -26,6 +26,18 @@ const UsuarioModel = {
         return rows[0] || null;
     },
 
+    // Buscar usuario por DNI
+    async buscarPorDni(dni) {
+        if (!dni) return null;
+        const [rows] = await pool.query(`
+            SELECT u.*, COALESCE(r.nombre_rol, '-') AS nombre_rol
+            FROM usuarios u
+            LEFT JOIN roles r ON u.id_rol = r.id_rol
+            WHERE u.dni = ?
+        `, [dni]);
+        return rows[0] || null;
+    },
+
     // Obtener lista completa de usuarios
     async obtenerTodos() {
         const [rows] = await pool.query(`

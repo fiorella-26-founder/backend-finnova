@@ -1,5 +1,6 @@
 const SolicitudModel = require('../models/solicitudModel');
 const ClienteModel = require('../models/clienteModel');
+const ServicioModel = require('../models/servicioModel');
 const UsuarioModel = require('../models/usuarioModel');
 const EmailService = require('../utils/emailService');
 const cryptoUtil = require('../utils/cryptoUtil');
@@ -8,6 +9,75 @@ const pool = require('../config/db');
 function sanitizarTexto(texto) {
     if (typeof texto !== 'string') return texto;
     return texto.trim();
+}
+
+// Función auxiliar para auto-crear usuario con rol Cliente y emitir correo con credenciales tras validación/aprobación
+async function asegurarUsuarioClienteYEnviarCredenciales(solicitudId) {
+    try {
+        const sol = await SolicitudModel.obtenerPorId(solicitudId);
+        if (!sol) return;
+
+        let clientEmail = sol.correo_cliente && sol.correo_cliente !== '-' ? sol.correo_cliente.trim().toLowerCase() : null;
+        let clientDni = sol.dni_cliente && sol.dni_cliente !== '-' ? sol.dni_cliente.trim() : '';
+        let clientName = sol.nombre_cliente && sol.nombre_cliente !== '-' ? sol.nombre_cliente.trim() : 'Cliente Finnova';
+        let clientPhone = sol.telefono_cliente && sol.telefono_cliente !== '-' ? sol.telefono_cliente.trim() : null;
+        let clienteId = sol.id_cliente || null;
+
+        // Si los datos no vinieron directamente en la solicitud, consultar cliente por ID
+        if ((!clientEmail || clientEmail === '-') && clienteId) {
+            const cli = await ClienteModel.obtenerPorId(clienteId);
+            if (cli) {
+                clientEmail = cli.correo_electronico ? cli.correo_electronico.trim().toLowerCase() : null;
+                clientDni = cli.dni ? cli.dni.trim() : clientDni;
+                clientName = cli.nombre_completo ? cli.nombre_completo.trim() : clientName;
+                clientPhone = cli.telefono && cli.telefono !== '-' ? cli.telefono.trim() : clientPhone;
+            }
+        }
+
+        if (clientEmail) {
+            // 1. Verificar si ya existe usuario con este correo o DNI
+            let usuario = await UsuarioModel.buscarPorEmail(clientEmail);
+            if (!usuario && clientDni) {
+                usuario = await UsuarioModel.buscarPorDni(clientDni);
+            }
+
+            if (!usuario) {
+                const tempPassword = cryptoUtil.generarPasswordAleatoria(8);
+                const id_usuario = await UsuarioModel.crear({
+                    dni: clientDni || '00000000',
+                    nombre_completo: clientName,
+                    correo_electronico: clientEmail,
+                    telefono: clientPhone,
+                    contrasena: tempPassword,
+                    id_rol: 3, // Rol Cliente
+                    estado: 'Activo'
+                });
+
+                // 2. Vincular id_usuario en la tabla clientes
+                if (clienteId) {
+                    await pool.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ?', [id_usuario, clienteId]);
+                }
+
+                // 3. Enviar correo de bienvenida con credenciales (no bloqueante)
+                try {
+                    await EmailService.enviarCredencialesCliente({
+                        nombre: clientName,
+                        email: clientEmail,
+                        password: tempPassword,
+                        dni: clientDni,
+                        id_solicitud: solicitudId
+                    });
+                } catch (errEmail) {
+                    console.error('ℹ️ [EmailService] Advertencia al enviar correo de bienvenida:', errEmail.message);
+                }
+            } else if (clienteId) {
+                // Si ya existía el usuario pero no estaba vinculado en la tabla clientes
+                await pool.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ? AND (id_usuario IS NULL OR id_usuario = 0)', [usuario.id_usuario, clienteId]);
+            }
+        }
+    } catch (err) {
+        console.error('Error al asegurar usuario cliente tras aprobación:', err);
+    }
 }
 
 const solicitudController = {
@@ -69,11 +139,35 @@ const solicitudController = {
             const targetName = clientName ? sanitizarTexto(clientName) : null;
             const targetEmail = clientEmail ? sanitizarTexto(clientEmail).toLowerCase() : null;
             const targetPhone = clientPhone ? sanitizarTexto(clientPhone) : null;
-            const targetServiceId = serviceId || id_servicio;
+            const rawServiceId = serviceId || id_servicio;
             const targetNotas = notes || notas_consulta;
             const targetAdvisorId = assignedAdvisorId || id_asesor_asignado;
 
-            let finalClienteId = id_cliente;
+            if (!rawServiceId) {
+                return res.status(400).json({
+                    error: 'Se requiere especificar el servicio financiero solicitado',
+                    mensaje: 'Servicio no especificado'
+                });
+            }
+
+            const targetServiceId = parseInt(rawServiceId, 10);
+            if (isNaN(targetServiceId)) {
+                return res.status(400).json({
+                    error: 'El ID del servicio solicitado debe ser numérico',
+                    mensaje: 'ID de servicio inválido'
+                });
+            }
+
+            // Verificar que el servicio exista en base de datos
+            const servicioExiste = await ServicioModel.obtenerPorId(targetServiceId);
+            if (!servicioExiste) {
+                return res.status(400).json({
+                    error: `El servicio con ID ${targetServiceId} no existe en la base de datos`,
+                    mensaje: 'Servicio no encontrado en el catálogo'
+                });
+            }
+
+            let finalClienteId = id_cliente ? parseInt(id_cliente, 10) : null;
 
             if (!finalClienteId && targetDni && targetName && targetEmail) {
                 let clienteExistente = await ClienteModel.obtenerPorDni(targetDni);
@@ -98,29 +192,28 @@ const solicitudController = {
                 });
             }
 
-            if (!targetServiceId) {
-                return res.status(400).json({
-                    error: 'Se requiere especificar el servicio solicitado',
-                    mensaje: 'Se requiere especificar el servicio solicitado'
-                });
-            }
-
-            const monto = monto_servicio ? parseFloat(monto_servicio) : 0;
+            const parsedMonto = monto_servicio ? parseFloat(monto_servicio) : (servicioExiste.precio_tarifa || 0);
+            const monto = isNaN(parsedMonto) ? (servicioExiste.precio_tarifa || 0) : parsedMonto;
 
             const solicitudData = {
                 id_solicitud: id_solicitud ? sanitizarTexto(id_solicitud) : null,
-                id_cliente: parseInt(finalClienteId, 10),
-                id_servicio: parseInt(targetServiceId, 10),
-                monto_servicio: isNaN(monto) ? 0 : monto,
+                id_cliente: finalClienteId,
+                id_servicio: targetServiceId,
+                monto_servicio: monto,
                 notas_consulta: targetNotas ? sanitizarTexto(targetNotas) : null,
                 estado_pago: sanitizarTexto(estado_pago) || 'Pendiente',
                 numero_operacion_yape: numero_operacion_yape ? sanitizarTexto(numero_operacion_yape) : null,
-                monto_pagado: monto_pagado ? parseFloat(monto_pagado) : null,
+                monto_pagado: monto_pagado ? parseFloat(monto_pagado) : monto,
                 id_asesor_asignado: targetAdvisorId ? parseInt(targetAdvisorId, 10) : null,
                 url_voucher_imagen: url_voucher_imagen || null
             };
 
             const createdId = await SolicitudModel.crear(solicitudData);
+
+            if (estado_pago === 'Pagado') {
+                await asegurarUsuarioClienteYEnviarCredenciales(createdId);
+            }
+
             res.status(201).json({
                 mensaje: 'Solicitud registrada correctamente',
                 id_solicitud: createdId
@@ -128,9 +221,9 @@ const solicitudController = {
         } catch (error) {
             console.error('Error al crear solicitud:', error);
             if (error.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'El código de la solicitud ya existe', mensaje: 'El código de la solicitud ya existe' });
+                return res.status(400).json({ error: 'El código de la solicitud o DNI ya existe', mensaje: 'Registro duplicado' });
             }
-            res.status(500).json({ error: 'Error al registrar la solicitud', mensaje: 'Error al registrar la solicitud' });
+            res.status(500).json({ error: 'Error al registrar la solicitud: ' + error.message, mensaje: 'Error al registrar la solicitud' });
         }
     },
 
@@ -144,6 +237,11 @@ const solicitudController = {
             if (!actualizado) {
                 return res.status(404).json({ error: 'Solicitud no encontrada o sin cambios', mensaje: 'Solicitud no encontrada o sin cambios' });
             }
+
+            if (req.body.estado_pago === 'Pagado' || req.body.estado_atencion === 'Aprobada' || req.body.estado_atencion === 'En Proceso') {
+                await asegurarUsuarioClienteYEnviarCredenciales(solicitudId);
+            }
+
             res.json({ mensaje: 'Solicitud actualizada correctamente' });
         } catch (error) {
             console.error('Error al actualizar solicitud:', error);
@@ -188,6 +286,10 @@ const solicitudController = {
             const actualizado = await SolicitudModel.cambiarEstado(sanitizarTexto(id), sanitizarTexto(targetStatus));
             if (!actualizado) {
                 return res.status(404).json({ error: 'Solicitud no encontrada', mensaje: 'Solicitud no encontrada' });
+            }
+
+            if (targetStatus === 'Aprobada' || targetStatus === 'En Proceso' || targetStatus === 'Pendiente de Asignación' || targetStatus === 'Pendiente de Asignacion') {
+                await asegurarUsuarioClienteYEnviarCredenciales(sanitizarTexto(id));
             }
 
             res.json({ mensaje: `Estado de la solicitud actualizado a "${targetStatus}"` });
@@ -266,63 +368,13 @@ const solicitudController = {
 
             // Si el pago fue aprobado ('Pagado'), auto-crear usuario cliente y enviar credenciales
             if (estado_pago === 'Pagado') {
-                const sol = await SolicitudModel.obtenerPorId(solicitudId);
-                let clientEmail = sol && sol.correo_cliente && sol.correo_cliente !== '-' ? sol.correo_cliente.trim().toLowerCase() : null;
-                let clientDni = sol && sol.dni_cliente && sol.dni_cliente !== '-' ? sol.dni_cliente.trim() : '';
-                let clientName = sol && sol.nombre_cliente && sol.nombre_cliente !== '-' ? sol.nombre_cliente.trim() : 'Cliente Finnova';
-                let clientPhone = sol && sol.telefono_cliente && sol.telefono_cliente !== '-' ? sol.telefono_cliente.trim() : null;
-                let clienteId = sol ? sol.id_cliente : null;
-
-                // Si los datos no vinieron directamente en la solicitud, consultar cliente por ID
-                if ((!clientEmail || clientEmail === '-') && clienteId) {
-                    const cli = await ClienteModel.obtenerPorId(clienteId);
-                    if (cli) {
-                        clientEmail = cli.correo_electronico ? cli.correo_electronico.trim().toLowerCase() : null;
-                        clientDni = cli.dni ? cli.dni.trim() : clientDni;
-                        clientName = cli.nombre_completo ? cli.nombre_completo.trim() : clientName;
-                        clientPhone = cli.telefono && cli.telefono !== '-' ? cli.telefono.trim() : clientPhone;
-                    }
-                }
-
-                if (clientEmail) {
-                    // 1. Verificar si ya existe usuario con este correo
-                    let usuario = await UsuarioModel.buscarPorEmail(clientEmail);
-                    if (!usuario) {
-                        const tempPassword = cryptoUtil.generarPasswordAleatoria(8);
-                        const id_usuario = await UsuarioModel.crear({
-                            dni: clientDni || '00000000',
-                            nombre_completo: clientName,
-                            correo_electronico: clientEmail,
-                            telefono: clientPhone,
-                            contrasena: tempPassword,
-                            id_rol: 3, // Rol Cliente
-                            estado: 'Activo'
-                        });
-
-                        // 2. Vincular id_usuario en la tabla clientes
-                        if (clienteId) {
-                            await pool.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ?', [id_usuario, clienteId]);
-                        }
-
-                        // 3. Enviar correo de bienvenida con credenciales
-                        await EmailService.enviarCredencialesCliente({
-                            nombre: clientName,
-                            email: clientEmail,
-                            password: tempPassword,
-                            dni: clientDni,
-                            id_solicitud: solicitudId
-                        });
-                    } else if (clienteId) {
-                        // Si ya existía el usuario pero no estaba vinculado en la tabla clientes
-                        await pool.query('UPDATE clientes SET id_usuario = ? WHERE id_cliente = ? AND id_usuario IS NULL', [usuario.id_usuario, clienteId]);
-                    }
-                }
+                await asegurarUsuarioClienteYEnviarCredenciales(solicitudId);
             }
 
             res.json({ mensaje: `Pago de la solicitud actualizado a "${estado_pago}"` });
         } catch (error) {
             console.error('Error al validar pago de solicitud:', error);
-            res.status(500).json({ error: 'Error al validar pago', mensaje: 'Error al validar pago' });
+            res.status(500).json({ error: 'Error al validar pago: ' + error.message, mensaje: 'Error al validar pago' });
         }
     },
 

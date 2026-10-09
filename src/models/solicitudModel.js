@@ -116,7 +116,8 @@ const SolicitudModel = {
         const [rows] = await pool.query(`
             SELECT id_solicitud 
             FROM solicitudes 
-            ORDER BY fecha_registro DESC, id_solicitud DESC 
+            WHERE id_solicitud LIKE 'SOL-%'
+            ORDER BY CAST(SUBSTRING(id_solicitud, 5) AS UNSIGNED) DESC, id_solicitud DESC 
             LIMIT 1
         `);
 
