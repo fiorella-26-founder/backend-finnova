@@ -91,7 +91,7 @@ const UsuarioModel = {
             const contrasena_hash = bcrypt.hashSync(contrasena.trim(), salt);
             const [result] = await pool.query(
                 `UPDATE usuarios 
-                 SET dni = ?, nombre_completo = ?, correo_electronico = ?, telefono = ?, id_rol = ?, estado = ?, contrasena_hash = ?
+                 SET dni = ?, nombre_completo = ?, correo_electronico = ?, telefono = ?, id_rol = ?, estado = ?, contrasena_hash = ?, intentos_fallidos = 0, bloqueado_hasta = NULL
                  WHERE id_usuario = ?`,
                 [dni, nombre_completo, correo_electronico, telefono, id_rol, estado, contrasena_hash, id_usuario]
             );
