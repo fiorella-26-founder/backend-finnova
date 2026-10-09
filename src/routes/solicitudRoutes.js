@@ -4,8 +4,8 @@ const solicitudController = require('../controllers/solicitudController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // Rutas para /api/solicitudes
-router.get('/', solicitudController.getSolicitudes);
-router.get('/:id', solicitudController.getSolicitudById);
+router.get('/', authMiddleware.verificarTokenOpcional, solicitudController.getSolicitudes);
+router.get('/:id', authMiddleware.verificarTokenOpcional, solicitudController.getSolicitudById);
 router.post('/', solicitudController.createSolicitud);
 router.put('/:id', solicitudController.updateSolicitud);
 router.patch('/:id/asignar-asesor', solicitudController.asignarAsesor);

@@ -5,7 +5,7 @@ const auditLogger = require('../utils/auditLogger');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'finnova_super_secret_jwt_key_2026_unfv';
+const JWT_SECRET = process.env.JWT_SECRET || 'finnova_secret_jwt_token_key_2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
 const authController = {

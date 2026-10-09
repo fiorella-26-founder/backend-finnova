@@ -25,6 +25,21 @@ const authMiddleware = {
         }
     },
 
+    // Middleware opcional: si se envía un token válido, decodifica req.usuario; si no, continúa sin bloquear
+    verificarTokenOpcional(req, res, next) {
+        try {
+            const authHeader = req.headers['authorization'] || req.headers['x-access-token'];
+            if (authHeader) {
+                const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader;
+                const decoded = jwt.verify(token, JWT_SECRET);
+                req.usuario = decoded;
+            }
+        } catch (error) {
+            // Ignorar error y continuar como anónimo
+        }
+        next();
+    },
+
     // Middleware para verificar roles permitidos (ej. 'Administrador', 'Asesor', 1, 2, etc.)
     verificarRol(...rolesPermitidos) {
         return (req, res, next) => {

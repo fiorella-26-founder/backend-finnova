@@ -23,6 +23,12 @@ async function testConnection() {
             await connection.query('ALTER TABLE solicitudes MODIFY COLUMN estado_atencion VARCHAR(60) DEFAULT "Nueva"');
             await connection.query('ALTER TABLE solicitudes MODIFY COLUMN estado_pago VARCHAR(60) DEFAULT "Pendiente"');
             await connection.query('ALTER TABLE solicitudes MODIFY COLUMN id_solicitud VARCHAR(50)');
+            await connection.query(`
+                UPDATE clientes c
+                JOIN usuarios u ON (c.correo_electronico = u.correo_electronico OR c.dni = u.dni)
+                SET c.id_usuario = u.id_usuario
+                WHERE (c.id_usuario IS NULL OR c.id_usuario = 0)
+            `);
         } catch (migErr) {
             console.warn('ℹ️ [DB] Nota sobre migración de columnas:', migErr.message);
         }
