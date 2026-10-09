@@ -30,6 +30,13 @@ async function testConnection() {
                 SET c.id_usuario = u.id_usuario
                 WHERE (c.id_usuario IS NULL OR c.id_usuario = 0)
             `);
+            await connection.query(`
+                UPDATE clientes c
+                JOIN solicitudes s ON c.id_cliente = s.id_cliente
+                SET c.id_asesor_preferente = s.id_asesor_asignado
+                WHERE (c.id_asesor_preferente IS NULL OR c.id_asesor_preferente = 0)
+                  AND s.id_asesor_asignado IS NOT NULL AND s.id_asesor_asignado > 0
+            `);
             // Desbloquear usuarios bloqueados por intentos fallidos de prueba
             await connection.query('UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE bloqueado_hasta IS NOT NULL OR intentos_fallidos > 0');
         } catch (migErr) {

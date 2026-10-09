@@ -214,6 +214,14 @@ const solicitudController = {
 
             const createdId = await SolicitudModel.crear(solicitudData);
 
+            if (targetAdvisorId && finalClienteId) {
+                try {
+                    await ClienteModel.asignarAsesor(finalClienteId, parseInt(targetAdvisorId, 10));
+                } catch (eCli) {
+                    console.warn('Advertencia al vincular asesor preferente a cliente:', eCli.message);
+                }
+            }
+
             if (estado_pago === 'Pagado') {
                 await asegurarUsuarioClienteYEnviarCredenciales(createdId);
             }
@@ -242,6 +250,14 @@ const solicitudController = {
                 return res.status(404).json({ error: 'Solicitud no encontrada o sin cambios', mensaje: 'Solicitud no encontrada o sin cambios' });
             }
 
+            const targetAdvisorId = req.body.id_asesor_asignado || req.body.assignedAdvisorId;
+            if (targetAdvisorId) {
+                const sol = await SolicitudModel.obtenerPorId(solicitudId);
+                if (sol && sol.id_cliente) {
+                    await ClienteModel.asignarAsesor(sol.id_cliente, parseInt(targetAdvisorId, 10));
+                }
+            }
+
             if (req.body.estado_pago === 'Pagado' || req.body.estado_atencion === 'Aprobada' || req.body.estado_atencion === 'En Proceso') {
                 await asegurarUsuarioClienteYEnviarCredenciales(solicitudId);
             }
@@ -264,9 +280,20 @@ const solicitudController = {
                 return res.status(400).json({ error: 'Se requiere ID de asesor', mensaje: 'Se requiere ID de asesor' });
             }
 
-            const actualizado = await SolicitudModel.asignarAsesor(sanitizarTexto(id), parseInt(targetAdvisorId, 10));
+            const solicitudId = sanitizarTexto(id);
+            const actualizado = await SolicitudModel.asignarAsesor(solicitudId, parseInt(targetAdvisorId, 10));
             if (!actualizado) {
                 return res.status(404).json({ error: 'Solicitud no encontrada', mensaje: 'Solicitud no encontrada' });
+            }
+
+            // Sincronizar asesor asignado con el cliente
+            try {
+                const sol = await SolicitudModel.obtenerPorId(solicitudId);
+                if (sol && sol.id_cliente) {
+                    await ClienteModel.asignarAsesor(sol.id_cliente, parseInt(targetAdvisorId, 10));
+                }
+            } catch (errSync) {
+                console.warn('Advertencia al sincronizar asesor con cliente:', errSync.message);
             }
 
             res.json({ mensaje: 'Asesor asignado exitosamente a la solicitud' });
