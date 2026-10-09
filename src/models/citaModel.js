@@ -35,6 +35,76 @@ const CitaModel = {
         return rows;
     },
 
+    // Obtener citas asignadas a un asesor
+    async obtenerPorAsesor(id_asesor) {
+        const [rows] = await pool.query(`
+            SELECT 
+                cit.id_cita,
+                cit.id_solicitud,
+                cit.id_cliente,
+                cit.id_asesor,
+                cit.fecha_hora,
+                cit.modalidad,
+                cit.lugar_o_enlace,
+                cit.estado,
+                COALESCE(cit.indicaciones_previas, '-') AS indicaciones_previas,
+                COALESCE(cit.observaciones_atencion, '-') AS observaciones_atencion,
+                COALESCE(cit.resultados_acuerdos, '-') AS resultados_acuerdos,
+                cit.fecha_registro,
+                COALESCE(c.nombre_completo, '-') AS nombre_cliente,
+                COALESCE(c.dni, '-') AS dni_cliente,
+                COALESCE(c.correo_electronico, '-') AS correo_cliente,
+                COALESCE(c.telefono, '-') AS telefono_cliente,
+                COALESCE(u.nombre_completo, '-') AS nombre_asesor,
+                COALESCE(u.correo_electronico, '-') AS correo_asesor,
+                sol.id_servicio,
+                COALESCE(s.titulo, '-') AS titulo_servicio
+            FROM citas cit
+            LEFT JOIN clientes c ON cit.id_cliente = c.id_cliente
+            LEFT JOIN usuarios u ON cit.id_asesor = u.id_usuario
+            LEFT JOIN solicitudes sol ON cit.id_solicitud = sol.id_solicitud
+            LEFT JOIN servicios s ON sol.id_servicio = s.id_servicio
+            WHERE cit.id_asesor = ?
+            ORDER BY cit.fecha_hora DESC
+        `, [id_asesor]);
+        return rows;
+    },
+
+    // Obtener citas pertenecientes a un cliente (por id_usuario o id_cliente)
+    async obtenerPorCliente(id_usuario) {
+        const [rows] = await pool.query(`
+            SELECT 
+                cit.id_cita,
+                cit.id_solicitud,
+                cit.id_cliente,
+                cit.id_asesor,
+                cit.fecha_hora,
+                cit.modalidad,
+                cit.lugar_o_enlace,
+                cit.estado,
+                COALESCE(cit.indicaciones_previas, '-') AS indicaciones_previas,
+                COALESCE(cit.observaciones_atencion, '-') AS observaciones_atencion,
+                COALESCE(cit.resultados_acuerdos, '-') AS resultados_acuerdos,
+                cit.fecha_registro,
+                COALESCE(c.nombre_completo, '-') AS nombre_cliente,
+                COALESCE(c.dni, '-') AS dni_cliente,
+                COALESCE(c.correo_electronico, '-') AS correo_cliente,
+                COALESCE(c.telefono, '-') AS telefono_cliente,
+                COALESCE(u.nombre_completo, '-') AS nombre_asesor,
+                COALESCE(u.correo_electronico, '-') AS correo_asesor,
+                sol.id_servicio,
+                COALESCE(s.titulo, '-') AS titulo_servicio
+            FROM citas cit
+            LEFT JOIN clientes c ON cit.id_cliente = c.id_cliente
+            LEFT JOIN usuarios u ON cit.id_asesor = u.id_usuario
+            LEFT JOIN solicitudes sol ON cit.id_solicitud = sol.id_solicitud
+            LEFT JOIN servicios s ON sol.id_servicio = s.id_servicio
+            WHERE c.id_usuario = ? OR cit.id_cliente IN (SELECT id_cliente FROM clientes WHERE id_usuario = ?)
+            ORDER BY cit.fecha_hora DESC
+        `, [id_usuario, id_usuario]);
+        return rows;
+    },
+
     // Obtener cita por ID
     async obtenerPorId(id_cita) {
         const [rows] = await pool.query(`

@@ -11,6 +11,15 @@ const citaController = {
     // GET /api/citas
     async getCitas(req, res) {
         try {
+            const user = req.usuario;
+            if (user && user.rol === 'Asesor') {
+                const citas = await CitaModel.obtenerPorAsesor(user.id_usuario);
+                return res.json(citas);
+            }
+            if (user && user.rol === 'Cliente') {
+                const citas = await CitaModel.obtenerPorCliente(user.id_usuario);
+                return res.json(citas);
+            }
             const citas = await CitaModel.obtenerTodas();
             res.json(citas);
         } catch (error) {

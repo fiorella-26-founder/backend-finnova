@@ -100,14 +100,42 @@ const SolicitudModel = {
                 COALESCE(c.telefono, '-') AS telefono_cliente,
                 COALESCE(s.titulo, '-') AS titulo_servicio,
                 COALESCE(s.precio_tarifa, sol.monto_servicio) AS precio_servicio,
-                COALESCE(p.nombre_empresa, '-') AS nombre_proveedor
+                COALESCE(p.nombre_empresa, '-') AS nombre_proveedor,
+                COALESCE(u.nombre_completo, '-') AS nombre_asesor,
+                COALESCE(u.correo_electronico, '-') AS correo_asesor
             FROM solicitudes sol
             LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
             LEFT JOIN servicios s ON sol.id_servicio = s.id_servicio
             LEFT JOIN proveedores p ON s.id_proveedor = p.id_proveedor
+            LEFT JOIN usuarios u ON sol.id_asesor_asignado = u.id_usuario
             WHERE sol.id_asesor_asignado = ?
             ORDER BY sol.fecha_registro DESC
         `, [id_asesor]);
+        return rows;
+    },
+
+    // Obtener solicitudes pertenecientes a un cliente (por id_usuario de la sesión o id_cliente)
+    async obtenerPorCliente(id_usuario) {
+        const [rows] = await pool.query(`
+            SELECT 
+                sol.*,
+                COALESCE(c.nombre_completo, '-') AS nombre_cliente,
+                COALESCE(c.dni, '-') AS dni_cliente,
+                COALESCE(c.correo_electronico, '-') AS correo_cliente,
+                COALESCE(c.telefono, '-') AS telefono_cliente,
+                COALESCE(s.titulo, '-') AS titulo_servicio,
+                COALESCE(s.precio_tarifa, sol.monto_servicio) AS precio_servicio,
+                COALESCE(p.nombre_empresa, '-') AS nombre_proveedor,
+                COALESCE(u.nombre_completo, '-') AS nombre_asesor,
+                COALESCE(u.correo_electronico, '-') AS correo_asesor
+            FROM solicitudes sol
+            LEFT JOIN clientes c ON sol.id_cliente = c.id_cliente
+            LEFT JOIN servicios s ON sol.id_servicio = s.id_servicio
+            LEFT JOIN proveedores p ON s.id_proveedor = p.id_proveedor
+            LEFT JOIN usuarios u ON sol.id_asesor_asignado = u.id_usuario
+            WHERE c.id_usuario = ? OR sol.id_cliente IN (SELECT id_cliente FROM clientes WHERE id_usuario = ?)
+            ORDER BY sol.fecha_registro DESC
+        `, [id_usuario, id_usuario]);
         return rows;
     },
 

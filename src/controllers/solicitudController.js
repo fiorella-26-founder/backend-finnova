@@ -89,6 +89,10 @@ const solicitudController = {
                 const solicitudes = await SolicitudModel.obtenerPorAsesor(user.id_usuario);
                 return res.json(solicitudes);
             }
+            if (user && user.rol === 'Cliente') {
+                const solicitudes = await SolicitudModel.obtenerPorCliente(user.id_usuario);
+                return res.json(solicitudes);
+            }
             const solicitudes = await SolicitudModel.obtenerTodas();
             res.json(solicitudes);
         } catch (error) {
