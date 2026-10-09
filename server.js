@@ -19,6 +19,7 @@ const campaniaRoutes = require('./src/routes/campaniaRoutes');
 const reporteRoutes = require('./src/routes/reporteRoutes');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ==================================================================
 // 1. CAPA DE SEGURIDAD HTTP: HELMET & CABECERAS
@@ -57,7 +58,7 @@ app.use(cors({
 // ==================================================================
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000,
+    max: 2000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Límite de solicitudes alcanzado. Por favor, intente nuevamente más tarde.', mensaje: 'Límite de solicitudes alcanzado. Por favor, intente nuevamente más tarde.' }
@@ -67,7 +68,7 @@ app.use('/api/', generalLimiter);
 // Limitador estricto para inicio de sesión (Protección contra Ataques de Fuerza Bruta)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Demasiados intentos de autenticación desde esta IP. Intente de nuevo en 15 minutos por seguridad.', mensaje: 'Demasiados intentos de autenticación desde esta IP. Intente de nuevo en 15 minutos por seguridad.' }
