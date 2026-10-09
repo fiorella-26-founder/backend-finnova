@@ -32,9 +32,6 @@ async function testConnection() {
             `);
             // Desbloquear usuarios bloqueados por intentos fallidos de prueba
             await connection.query('UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE bloqueado_hasta IS NOT NULL OR intentos_fallidos > 0');
-            // Asegurar que Fiorella pueda ingresar con password123 de forma inmediata
-            const fiorellaHash = bcrypt.hashSync('password123', 10);
-            await connection.query('UPDATE usuarios SET contrasena_hash = ?, estado = "Activo", intentos_fallidos = 0, bloqueado_hasta = NULL WHERE correo_electronico = "fiorellatecsup26@gmail.com"', [fiorellaHash]);
         } catch (migErr) {
             console.warn('ℹ️ [DB] Nota sobre migración de columnas:', migErr.message);
         }
