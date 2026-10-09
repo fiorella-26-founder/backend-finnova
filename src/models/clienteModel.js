@@ -16,18 +16,18 @@ const ClienteModel = {
                     SELECT s.id_asesor_asignado 
                     FROM solicitudes s 
                     WHERE s.id_cliente = c.id_cliente AND s.id_asesor_asignado IS NOT NULL 
-                    ORDER BY s.fecha_solicitud DESC LIMIT 1
+                    ORDER BY s.fecha_registro DESC LIMIT 1
                 )) AS id_asesor_preferente,
                 c.estado,
                 c.fecha_registro,
                 COALESCE(
                     u.nombre_completo, 
-                    (SELECT u2.nombre_completo FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_solicitud DESC LIMIT 1), 
+                    (SELECT u2.nombre_completo FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_registro DESC LIMIT 1), 
                     '-'
                 ) AS nombre_asesor,
                 COALESCE(
                     u.correo_electronico, 
-                    (SELECT u2.correo_electronico FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_solicitud DESC LIMIT 1), 
+                    (SELECT u2.correo_electronico FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_registro DESC LIMIT 1), 
                     '-'
                 ) AS correo_asesor
             FROM clientes c
@@ -52,18 +52,18 @@ const ClienteModel = {
                     SELECT s.id_asesor_asignado 
                     FROM solicitudes s 
                     WHERE s.id_cliente = c.id_cliente AND s.id_asesor_asignado IS NOT NULL 
-                    ORDER BY s.fecha_solicitud DESC LIMIT 1
+                    ORDER BY s.fecha_registro DESC LIMIT 1
                 )) AS id_asesor_preferente,
                 c.estado,
                 c.fecha_registro,
                 COALESCE(
                     u.nombre_completo, 
-                    (SELECT u2.nombre_completo FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_solicitud DESC LIMIT 1), 
+                    (SELECT u2.nombre_completo FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_registro DESC LIMIT 1), 
                     '-'
                 ) AS nombre_asesor,
                 COALESCE(
                     u.correo_electronico, 
-                    (SELECT u2.correo_electronico FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_solicitud DESC LIMIT 1), 
+                    (SELECT u2.correo_electronico FROM solicitudes s2 JOIN usuarios u2 ON s2.id_asesor_asignado = u2.id_usuario WHERE s2.id_cliente = c.id_cliente AND s2.id_asesor_asignado IS NOT NULL ORDER BY s2.fecha_registro DESC LIMIT 1), 
                     '-'
                 ) AS correo_asesor
             FROM clientes c
