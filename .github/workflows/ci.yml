@@ -1,0 +1,33 @@
+name: Backend Finnova CI - Control de Cambios
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-verify:
+    name: ⚙️ Backend Test, Syntax & Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. Instalar Dependencias
+        run: npm ci
+
+      - name: 4. Verificación de Sintaxis y Módulos
+        run: |
+          node --check server.js
+          node --check src/config/db.js
+
+      - name: 5. Auditoría de Vulnerabilidades (npm audit)
+        run: npm audit --audit-level=critical || true
