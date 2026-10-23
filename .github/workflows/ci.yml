@@ -19,15 +19,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: 3. Instalar Dependencias
-        run: npm ci
+        run: npm install --no-audit
 
       - name: 4. Verificación de Sintaxis y Módulos
         run: |
           node --check server.js
           node --check src/config/db.js
 
-      - name: 5. Auditoría de Vulnerabilidades (npm audit)
+      - name: 5. Ejecutar Tests de Verificación
+        run: npm test
+
+      - name: 6. Auditoría de Seguridad (npm audit)
         run: npm audit --audit-level=critical || true
