@@ -3,6 +3,7 @@ const UsuarioModel = require('../models/usuarioModel');
 const cryptoUtil = require('../utils/cryptoUtil');
 const auditLogger = require('../utils/auditLogger');
 const bcrypt = require('bcryptjs');
+const { compararPasswordAsync } = require('../utils/cryptoAsync');
 const pool = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'finnova_secret_jwt_token_key_2026';
@@ -54,7 +55,8 @@ const authController = {
                 return res.status(403).json({ error: errorMsg, mensaje: errorMsg });
             }
 
-            const esContrasenaValida = bcrypt.compareSync(rawPassword, usuario.contrasena_hash);
+            // Comparación asíncrona no bloqueante 
+            const esContrasenaValida = await compararPasswordAsync(rawPassword, usuario.contrasena_hash);
 
             if (!esContrasenaValida) {
                 const resultadoBloqueo = await UsuarioModel.registrarIntentoFallido(usuario.id_usuario, usuario.intentos_fallidos || 0);
@@ -204,9 +206,9 @@ const authController = {
             const nueva = nueva_contrasena || newPassword;
 
             if (!actual || !nueva) {
-                return res.status(400).json({ 
-                    error: 'La contraseña actual y la nueva contraseña son requeridas', 
-                    mensaje: 'La contraseña actual y la nueva contraseña son requeridas' 
+                return res.status(400).json({
+                    error: 'La contraseña actual y la nueva contraseña son requeridas',
+                    mensaje: 'La contraseña actual y la nueva contraseña son requeridas'
                 });
             }
 
@@ -214,9 +216,9 @@ const authController = {
             const rawNueva = cryptoUtil.desencriptarContrasena(nueva);
 
             if (rawNueva.length < 6) {
-                return res.status(400).json({ 
-                    error: 'La nueva contraseña debe tener al menos 6 caracteres', 
-                    mensaje: 'La nueva contraseña debe tener al menos 6 caracteres' 
+                return res.status(400).json({
+                    error: 'La nueva contraseña debe tener al menos 6 caracteres',
+                    mensaje: 'La nueva contraseña debe tener al menos 6 caracteres'
                 });
             }
 
@@ -228,9 +230,9 @@ const authController = {
             const usuario = rows[0];
             const coincide = bcrypt.compareSync(rawActual, usuario.contrasena_hash);
             if (!coincide) {
-                return res.status(400).json({ 
-                    error: 'La contraseña actual no coincide', 
-                    mensaje: 'La contraseña actual que ingresaste es incorrecta.' 
+                return res.status(400).json({
+                    error: 'La contraseña actual no coincide',
+                    mensaje: 'La contraseña actual que ingresaste es incorrecta.'
                 });
             }
 

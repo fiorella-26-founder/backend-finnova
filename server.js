@@ -17,6 +17,7 @@ const solicitudRoutes = require('./src/routes/solicitudRoutes');
 const citaRoutes = require('./src/routes/citaRoutes');
 const campaniaRoutes = require('./src/routes/campaniaRoutes');
 const reporteRoutes = require('./src/routes/reporteRoutes');
+const soporteCambioRoutes = require('./src/routes/soporteCambioRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -94,6 +95,7 @@ app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/citas', citaRoutes);
 app.use('/api/campanias', campaniaRoutes);
 app.use('/api/reportes', reporteRoutes);
+app.use('/api/soporte-cambios', soporteCambioRoutes);
 
 // Manejador 404
 app.use((req, res) => {

@@ -228,3 +228,49 @@ INSERT INTO campanias (id_campana, titulo, mensaje_promocional, publico_objetivo
 (2, 'Protege a tu Familia - Seguro de Vida', 'Pólizas con devolución del 100% de aportes y cobertura médica internacional. Consulta con tu asesor asignado.', 'Clientes', 'Aseguradoras', 'assets/images/campaign_seguro.jpg', 'Activa', '2026-10-05 10:00:00', 1),
 (3, 'Tasa Preferencial Crédito Hipotecario', 'Convenios exclusivos con Interbank y BBVA con hasta 0.5% menos en TEA.', 'General', 'Financiero', 'assets/images/campaign_credito.jpg', 'Borrador', '2026-10-15 09:00:00', 1)
 ON DUPLICATE KEY UPDATE titulo=VALUES(titulo), mensaje_promocional=VALUES(mensaje_promocional), estado=VALUES(estado);
+
+
+-- ==================================================================
+-- 9. TABLA DE MESA DE AYUDA Y CONTROL DE CAMBIOS POR DIMENSIÓN (SEMANA 10 & 11)
+-- ==================================================================
+CREATE TABLE IF NOT EXISTS tickets_soporte_cambios (
+    id_ticket VARCHAR(30) PRIMARY KEY,
+    codigo_jira VARCHAR(30) DEFAULT NULL,
+    titulo VARCHAR(200) NOT NULL,
+    descripcion TEXT NOT NULL,
+    tipo_solicitud VARCHAR(60) NOT NULL DEFAULT 'Soporte / Mesa de Ayuda',
+    solicitante_nombre VARCHAR(120) NOT NULL,
+    solicitante_rol VARCHAR(40) NOT NULL DEFAULT 'Cliente',
+    prioridad VARCHAR(20) NOT NULL DEFAULT 'Media',
+    aplica_cambio VARCHAR(40) NOT NULL DEFAULT 'Pendiente Evaluación',
+    dimension_tecnica VARCHAR(50) NOT NULL DEFAULT 'Por Clasificar',
+    tipo_cambio_itil VARCHAR(40) NOT NULL DEFAULT 'No Aplica',
+    estado VARCHAR(40) NOT NULL DEFAULT 'Abierto',
+    componente_afectado VARCHAR(100) DEFAULT 'Plataforma Finnova',
+    ventana_calendarizacion VARCHAR(120) DEFAULT 'Ventana Estándar (Mar/Jue 10:00 AM)',
+    doc_pase_referencia VARCHAR(150) DEFAULT 'docs/PASE_A_PRODUCCION.md',
+    plan_rollback TEXT DEFAULT NULL,
+    resolucion_tecnica TEXT DEFAULT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO tickets_soporte_cambios (
+    id_ticket, codigo_jira, titulo, descripcion, tipo_solicitud,
+    solicitante_nombre, solicitante_rol, prioridad, aplica_cambio,
+    dimension_tecnica, tipo_cambio_itil, estado, componente_afectado,
+    ventana_calendarizacion, doc_pase_referencia, plan_rollback, resolucion_tecnica
+) VALUES
+('RFC-2026-001', 'FCC-101', '[CHE01] Configuración de trust proxy en Render y calibración de Rate Limiting', 'Ajuste crítico en server.js para identificar IP real detrás de Render Cloud y evitar bloqueos HTTP 429.', 'Incidente Técnico', 'Fiorella Gamarra', 'Administrador', 'Crítica', 'Si Aplica (RFC)', 'Infraestructura', 'Emergencia (CHE)', 'Completado', 'Backend Express (Render Cloud)', 'Ejecución Inmediata Hotfix (18/10/2026)', 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-01', 'Revertir configuración de express-rate-limit en Render.', 'Desplegado exitosamente en producción.'),
+('RFC-2026-002', 'FCC-102', '[CHN01] Optimización de Pool de Conexiones SSL/TLS hacia TiDB Cloud AWS', 'Ajuste de connectionLimit: 10 y cifrado TLS forzado en src/config/db.js.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Infraestructura', 'Normal (CHN)', 'En Proceso', 'TiDB Cloud Serverless / Render', 'Ventana Domingos 01:00 AM - 03:00 AM (UTC-5)', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'Restaurar variables de entorno DB_SSL en Render.', 'En pruebas de estrés k6.'),
+('RFC-2026-003', 'FCC-103', '[CHS01] Rotación trimestral de JWT_SECRET y endurecimiento de cabeceras Helmet', 'Renovación programada de llave JWT_SECRET en Render y políticas Cross-Origin en Helmet.', 'Requerimiento de Cambio', 'Carlos Mendoza (Seguridad TI)', 'Administrador', 'Media', 'Si Aplica (RFC)', 'Infraestructura', 'Estándar (CHS)', 'Abierto', 'Backend Express (Render Cloud)', 'Domingo 15/11/2026 01:30 AM (UTC-5)', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'Restaurar valor anterior de JWT_SECRET en Render.', 'Pendiente de ventana programada.'),
+('RFC-2026-004', 'FCC-104', '[CHN02] Migración de columna id_asesor_preferente y auto-aprovisionamiento Cliente', 'Alteración de esquema en clientes y auto-creación de usuario Cliente al validar pago Yape.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Aplicaciones y BD', 'Normal (CHN)', 'Completado', 'Base de Datos TiDB + Backend Express + Angular', 'Ejecutado en Ventana 25/10/2026 01:30 AM', 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-02', 'ALTER TABLE clientes DROP COLUMN id_asesor_preferente;', 'Migración aplicada sin pérdida de datos.'),
+('RFC-2026-005', 'FCC-105', '[CHN03] Despliegue de Módulo de Mesa de Ayuda y Bandeja de Control de Cambios', 'Creación de tabla tickets_soporte_cambios, API /api/soporte-cambios y vista /dashboard/support-changes.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Aplicaciones y BD', 'Normal (CHN)', 'En Proceso', 'Frontend Angular + Backend + TiDB Cloud', 'Ventana Actual 06/11/2026', 'proyecto-finnova/docs/PASE_A_PRODUCCION.md#PASE-FE-2026-04', 'Instant Rollback en Vercel y DROP TABLE tickets_soporte_cambios.', 'En validación funcional con métricas por dimensión.'),
+('RFC-2026-006', 'FCC-106', '[CHN04] Creación de índice compuesto idx_estado_fecha en tabla solicitudes', 'Optimización DDL en TiDB Cloud para acelerar consultas de reportes de comisiones.', 'Requerimiento de Cambio', 'Juan Pérez (Asesor Senior)', 'Asesor', 'Media', 'Si Aplica (RFC)', 'Aplicaciones y BD', 'Normal (CHN)', 'Abierto', 'Base de Datos (TiDB Cloud)', 'Domingo 08/11/2026 02:00 AM (UTC-5)', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'DROP INDEX idx_estado_fecha ON solicitudes;', 'Aprobado técnicamente por CAB.'),
+('RFC-2026-007', 'FCC-107', '[CHS02] Publicación de Runbook y Acta de Pase a Producción en repositorios Front y Back', 'Versionamiento de docs/PASE_A_PRODUCCION.md en proyecto-finnova y backend-finnova.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Documentación', 'Estándar (CHS)', 'Completado', 'Repositorios GitHub (Front y Back)', '06/11/2026 11:00 AM (Ventana Estándar)', 'proyecto-finnova/docs/PASE_A_PRODUCCION.md', 'Revertir commit documental en rama main.', 'Documentación publicada y vinculada a las actas.'),
+('RFC-2026-008', 'FCC-108', '[CHS03] Actualización de especificación de endpoints REST y Colección Postman v1.2', 'Documentación de contratos JSON para /api/soporte-cambios y /api/solicitudes.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Media', 'Si Aplica (RFC)', 'Documentación', 'Estándar (CHS)', 'En Proceso', 'Swagger / Documentación Técnica API', 'Jueves 06/11/2026 04:00 PM', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'Restaurar versión v1.1 de la especificación.', 'Validando ejemplos de respuesta.'),
+('RFC-2026-009', 'FCC-109', '[CHS04] Actualización del Diccionario de Datos Relacional y Diagrama ER', 'Incorporación de tickets_soporte_cambios y logs_auditoria_seguridad en diccionario de datos.', 'Requerimiento de Cambio', 'Ana Torres (Analista QA)', 'Asesor', 'Baja', 'Si Aplica (RFC)', 'Documentación', 'Estándar (CHS)', 'Abierto', 'Diccionario de Datos BD Finnova', 'Martes 10/11/2026 10:00 AM', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'Reversión documental en Git.', 'Abierto para revisión del DBA.'),
+('RFC-2026-010', 'FCC-110', '[CHS05] Programación de Cron Job keepAlive.js (cada 10 min) en horario hábil', 'Cambio de calendarización automatizada en scripts/keepAlive.js para evitar Cold Start de Render.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Calendario', 'Estándar (CHS)', 'Completado', 'Cronograma Automatizado / scripts/keepAlive.js', 'Ejecución continua Lunes a Sábado (08:00 - 22:00 h)', 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-03', 'Detener proceso programado keepAlive.js.', 'Activo y verificado.'),
+('RFC-2026-011', 'FCC-111', '[CHN05] Reprogramación de Ventana de Mantenimiento Oficial y Respaldo TiDB Cloud', 'Traslado de ventana de mantenimiento al horario de menor tráfico (Domingos 01:00 - 03:00 AM UTC-5).', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Media', 'Si Aplica (RFC)', 'Calendario', 'Normal (CHN)', 'En Proceso', 'Calendario FSC / Ventana de Mantenimiento', 'Domingos 01:00 AM - 03:00 AM (UTC-5)', 'backend-finnova/docs/PASE_A_PRODUCCION.md', 'Retornar al horario previo (Sábados 11:30 PM).', 'Notificado a asesores.'),
+('RFC-2026-012', 'FCC-112', '[CHN06] Programación de Periodo de Congelamiento (Code Freeze) por Cierre Contable', 'Bloqueo programado en calendario de despliegues no críticos del 28 al 30 de cada mes.', 'Requerimiento de Cambio', 'Fiorella Gamarra', 'Administrador', 'Alta', 'Si Aplica (RFC)', 'Calendario', 'Normal (CHN)', 'Abierto', 'Calendario de Releases GitHub / Vercel / Render', 'Días 28 al 30 de cada mes (00:00 - 23:59 h)', 'proyecto-finnova/docs/PASE_A_PRODUCCION.md', 'Excepción temporal firmada por comité eCAB.', 'Programado en FSC de Noviembre.')
+ON DUPLICATE KEY UPDATE estado=VALUES(estado), dimension_tecnica=VALUES(dimension_tecnica);

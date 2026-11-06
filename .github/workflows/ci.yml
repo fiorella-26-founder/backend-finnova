@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-and-verify:
-    name: ⚙️ Backend Test, Syntax & Security Audit
+    name: Backend Test, Syntax & Security Audit
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +27,8 @@ jobs:
         run: |
           node --check server.js
           node --check src/config/db.js
+          node --check src/controllers/soporteCambioController.js
+          node --check src/models/soporteCambioModel.js
 
       - name: 5. Ejecutar Tests de Verificación
         run: npm test
