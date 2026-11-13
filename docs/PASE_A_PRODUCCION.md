@@ -107,4 +107,5 @@ Si el *Health Check* devuelve error `500` o fallo de conexión a TiDB Cloud:
 | **`PASE-BE-2026-02`** | **`FCC-104`** | **Aplicaciones y BD** | Migración de columna `id_asesor_preferente` en tabla `clientes` y caché LRU (`cacheMiddleware.js`). | 25/10/2026 (01:30 h) | **Completado** |
 | **`PASE-BE-2026-03`** | **`FCC-110`** | **Calendario** | Activación de tarea programada `scripts/keepAlive.js` (intervalo 10 min) para eliminar Cold Start en horario hábil. | 30/10/2026 (10:00 h) | **Completado** |
 | **`PASE-BE-2026-04`** | **`FCC-107`** | **Documentación** | Publicación de Runbook `docs/PASE_A_PRODUCCION.md` y especificación de endpoints `/api/soporte-cambios`. | 06/11/2026 (11:00 h) | **Completado** |
-| **`PASE-BE-2026-05`** | **`FCC-105`** | **Aplicaciones y BD** | Creación de tabla `tickets_soporte_cambios` y endpoints REST para Mesa de Ayuda y Control de Cambios. | 06/11/2026 (En Curso) | **En Proceso** |
+| **`PASE-BE-2026-05`** | **`FCC-105`** | **Aplicaciones y BD** | Creación de tabla `tickets_soporte_cambios` y endpoints REST para Mesa de Ayuda y Control de Cambios. | 06/11/2026 (16:30 h) | **Completado** |
+| **`PASE-BE-2026-06`** | **`FCC-113`** | **Aplicaciones y BD** | Integración de catálogo de incidentes ITIL 4 (`INC-2026-001` a `INC-2026-005`), soporte para rol Soporte TI y ordenamiento preferente. | 13/11/2026 (13:15 h) | **Completado** |

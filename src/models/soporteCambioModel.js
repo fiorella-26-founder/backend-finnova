@@ -2,6 +2,104 @@ const pool = require('../config/db');
 
 const INITIAL_TICKETS_SEED = [
     // =========================================================================
+    // INCIDENTES CRÍTICOS Y OPERATIVOS FINNOVA (SEMANA 14 - ITIL 4 & SLA)
+    // =========================================================================
+    {
+        id_ticket: 'INC-2026-001',
+        codigo_jira: 'INC-TI-101',
+        titulo: '[P1-CRÍTICO] Saturación de conexiones SSL TiDB Cloud durante validación concurrente de pagos Yape',
+        descripcion: 'Agotamiento del pool de conexiones SSL/TLS hacia TiDB Cloud AWS ante ráfaga de 50 transacciones concurrentes de validación de comprobantes Yape, arrojando excepciones ER_CON_COUNT_ERROR y denegación de servicio a clientes.',
+        tipo_solicitud: 'Incidente Técnico',
+        solicitante_nombre: 'Ing. Carlos Mendoza (Soporte TI)',
+        solicitante_rol: 'Soporte TI',
+        prioridad: 'Crítica',
+        aplica_cambio: 'Si Aplica (RFC)',
+        dimension_tecnica: 'Infraestructura',
+        tipo_cambio_itil: 'Normal (CHN)',
+        estado: 'Completado',
+        componente_afectado: 'TiDB Cloud Serverless / Pool de Conexiones',
+        ventana_calendarizacion: 'Pase ejecutado en Ventana FSC Dom 01:00 AM',
+        doc_pase_referencia: 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-02',
+        plan_rollback: 'Restaurar pool previo connectionLimit: 5 y reiniciar contenedor Render.',
+        resolucion_tecnica: 'Workaround estabilizó servicio en 25 min (MTTA: 8m, MTTR: 1.2h). Escala a RFC FCC-102.'
+    },
+    {
+        id_ticket: 'INC-2026-002',
+        codigo_jira: 'INC-TI-102',
+        titulo: '[P1-CRÍTICO] Bloqueo masivo HTTP 429 en login de asesores y pasarela por proxy inverso Render',
+        descripcion: 'El balanceador de carga de Render enmascaraba las IPs de origen de todos los asesores y clientes bajo una única IP interna compartida, disparando el middleware express-rate-limit y bloqueando el acceso general al sistema.',
+        tipo_solicitud: 'Incidente Técnico',
+        solicitante_nombre: 'Juan Pérez (Asesor)',
+        solicitante_rol: 'Asesor',
+        prioridad: 'Crítica',
+        aplica_cambio: 'Si Aplica (RFC)',
+        dimension_tecnica: 'Infraestructura',
+        tipo_cambio_itil: 'Emergencia (CHE)',
+        estado: 'Completado',
+        componente_afectado: 'Backend Express / Rate Limiting',
+        ventana_calendarizacion: 'Hotfix Inmediato eCAB (18/10/2026)',
+        doc_pase_referencia: 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-01',
+        plan_rollback: 'Rollback to previous deploy en consola Render (RTO < 3 min).',
+        resolucion_tecnica: 'Resuelto con Pase de Emergencia FCC-101. MTTA: 10m, MTTR: 45m.'
+    },
+    {
+        id_ticket: 'INC-2026-003',
+        codigo_jira: 'INC-TI-103',
+        titulo: '[P2-ALTO] Timeout HTTP 504 en carga de catálogo por Cold Start prolongado (>55s) en Render Free Tier',
+        descripcion: 'Tras 15 minutos de inactividad, el contenedor de Render se suspende. Al ingresar un cliente a la landing page o solicitar servicio, el tiempo de arranque frío excedía los 50 segundos, generando aborto de petición en el frontend Angular.',
+        tipo_solicitud: 'Incidente Técnico',
+        solicitante_nombre: 'María López (Cliente)',
+        solicitante_rol: 'Cliente',
+        prioridad: 'Alta',
+        aplica_cambio: 'Si Aplica (RFC)',
+        dimension_tecnica: 'Calendario',
+        tipo_cambio_itil: 'Estándar (CHS)',
+        estado: 'Completado',
+        componente_afectado: 'Cronograma Automatizado / scripts/keepAlive.js',
+        ventana_calendarizacion: 'Pase Estándar FCC-110 (Lunes a Sábado 08:00 - 22:00 h)',
+        doc_pase_referencia: 'backend-finnova/docs/PASE_A_PRODUCCION.md#PASE-BE-2026-03',
+        plan_rollback: 'Detener proceso cron keepAlive.js en caso de saturar cuota mensual.',
+        resolucion_tecnica: 'Se implementó Cron Job keepAlive.js ping cada 10 min. Cold start erradicado (latencia actual: 180ms). MTTA: 18m, MTTR: 3.5h.'
+    },
+    {
+        id_ticket: 'INC-2026-004',
+        codigo_jira: 'INC-TI-104',
+        titulo: '[P3-MEDIO] Error 413 Payload Too Large al adjuntar voucher Yape en alta resolución (>3MB) desde móvil',
+        descripcion: 'Clientes reportan imposibilidad de finalizar su solicitud de crédito cuando la fotografía del voucher tomada con cámara de 48MP genera un string Base64 superior a 3.5MB, superando el límite express.json({ limit: "2mb" }).',
+        tipo_solicitud: 'Incidente Técnico',
+        solicitante_nombre: 'Juan Pérez (Asesor)',
+        solicitante_rol: 'Asesor',
+        prioridad: 'Media',
+        aplica_cambio: 'Si Aplica (RFC)',
+        dimension_tecnica: 'Aplicaciones y BD',
+        tipo_cambio_itil: 'Normal (CHN)',
+        estado: 'En Proceso',
+        componente_afectado: 'Frontend Angular (Vercel) / Compresión de Vouchers',
+        ventana_calendarizacion: 'Ventana FSC Próximo Domingo 01:00 AM',
+        doc_pase_referencia: 'proyecto-finnova/docs/PASE_A_PRODUCCION.md',
+        plan_rollback: 'Revertir a input standard y alertar límite de 2MB.',
+        resolucion_tecnica: 'En desarrollo en rama feature/voucher-compressor. MTTA: 35m, En curso dentro de SLA (14h / 24h).'
+    },
+    {
+        id_ticket: 'INC-2026-005',
+        codigo_jira: 'INC-TI-105',
+        titulo: '[P4-BAJO] Desalineación de badge de estado en modal de citas virtuales en resolución 1366x768',
+        descripcion: 'En pantallas de laptops con resolución 1366x768 píxeles, la etiqueta de estado de la cita se solapa 4px sobre el botón de enlace de Google Meet.',
+        tipo_solicitud: 'Incidente Técnico',
+        solicitante_nombre: 'María López (Cliente)',
+        solicitante_rol: 'Cliente',
+        prioridad: 'Baja',
+        aplica_cambio: 'No Aplica (Soporte Directo)',
+        dimension_tecnica: 'N/A - Mesa de Ayuda',
+        tipo_cambio_itil: 'No Aplica',
+        estado: 'Abierto',
+        componente_afectado: 'Frontend Angular / Módulo de Citas',
+        ventana_calendarizacion: 'Pase menor en Sprint regular',
+        doc_pase_referencia: 'docs/PASE_A_PRODUCCION.md',
+        plan_rollback: 'N/A - Cambio cosmético.',
+        resolucion_tecnica: 'Catalogado en backlog cosmético. MTTA: 1.5h, SLA de 72h holgadamente cumplido.'
+    },
+    // =========================================================================
     // DIMENSIÓN 1: INFRAESTRUCTURA (3 Cambios: 1 Completado, 1 En Proceso, 1 Abierto)
     // =========================================================================
     {
@@ -341,8 +439,9 @@ class SoporteCambioModel {
             SELECT * FROM tickets_soporte_cambios
             ORDER BY 
                 CASE 
-                    WHEN id_ticket LIKE 'RFC-%' THEN 1
-                    ELSE 2
+                    WHEN id_ticket LIKE 'INC-%' THEN 1
+                    WHEN id_ticket LIKE 'RFC-%' THEN 2
+                    ELSE 3
                 END ASC,
                 id_ticket ASC
         `);
@@ -351,9 +450,9 @@ class SoporteCambioModel {
 
     static async crear(datos) {
         await this.asegurarTablaYSemilla();
-        const prefijo = datos.aplica_cambio === 'Si Aplica (RFC)' ? 'RFC' : 'SRQ';
+        const prefijo = datos.tipo_solicitud === 'Incidente Técnico' ? 'INC' : (datos.aplica_cambio === 'Si Aplica (RFC)' ? 'RFC' : 'SRQ');
         const id_ticket = datos.id_ticket || `${prefijo}-2026-${Math.floor(100 + Math.random() * 900)}`;
-        const codigo_jira = datos.codigo_jira || (prefijo === 'RFC' ? `FCC-${Math.floor(113 + Math.random() * 80)}` : `SRQ-SOP-${Math.floor(16 + Math.random() * 80)}`);
+        const codigo_jira = datos.codigo_jira || (prefijo === 'INC' ? `INC-TI-${Math.floor(100 + Math.random() * 900)}` : (prefijo === 'RFC' ? `FCC-${Math.floor(113 + Math.random() * 80)}` : `SRQ-SOP-${Math.floor(16 + Math.random() * 80)}`));
 
         await pool.query(
             `INSERT INTO tickets_soporte_cambios (
