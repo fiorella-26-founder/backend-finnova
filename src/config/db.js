@@ -39,6 +39,18 @@ async function testConnection() {
             `);
             // Desbloquear usuarios bloqueados por intentos fallidos de prueba
             await connection.query('UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE bloqueado_hasta IS NOT NULL OR intentos_fallidos > 0');
+
+            // Asegurar rol y usuario Soporte TI (Semana 14)
+            await connection.query(`
+                INSERT IGNORE INTO roles (id_rol, nombre_rol, descripcion)
+                VALUES (4, 'Soporte TI', 'Mesa de Operaciones TI, Gestión de Incidentes L1/L2 y SLAs')
+            `);
+            const hashSoporte = bcrypt.hashSync('soporte123', 10);
+            await connection.query(`
+                INSERT INTO usuarios (dni, nombre_completo, correo_electronico, telefono, contrasena_hash, id_rol, estado)
+                VALUES ('72183920', 'Ing. Carlos Mendoza', 'soporte.ti@finnova.pe', '981234567', '${hashSoporte}', 4, 'Activo')
+                ON DUPLICATE KEY UPDATE id_rol = 4, estado = 'Activo'
+            `);
         } catch (migErr) {
             console.warn('ℹ️ [DB] Nota sobre migración de columnas:', migErr.message);
         }
